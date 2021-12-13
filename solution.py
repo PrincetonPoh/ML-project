@@ -186,7 +186,7 @@ list_out_word_output = []  # list of (word, predicted label)
 viterbi_val = {}  # {(n, label): float}
 
 
-def generate_viterbi_values(n, current_label, word_list, words_unique, tags_unique, emission_params, transmission_params):
+def generate_viterbi_values(n, current_label, word_list, words_unique, labels_unique, emission_params, transmission_params):
     global viterbi_val
 
     # Smallest possible float
@@ -208,44 +208,30 @@ def generate_viterbi_values(n, current_label, word_list, words_unique, tags_uniq
                     emission_params[(current_label, UNK)]
                     * transmission_params[STARTING_TAG][current_label]
                 )
+        # handles the value error with wrong values 
         except ValueError:
             current_max_viterbi_value = -sys.float_info.max
 
         viterbi_val[(n, current_label)] = current_max_viterbi_value
         return
 
-    # Recursive call to generate viterbi_values for (n-1, tag)
-    for tag in tags_unique:
-        if (n - 1, tag) not in viterbi_val:
-            generate_viterbi_values(
-                n - 1,
-                tag,
-                word_list,
-                words_unique,
-                tags_unique,
-                emission_params,
-                transmission_params,
-            )
+    for label in labels_unique:
+        # create viterbi values (n-1, label)
+        if (n - 1, label) not in (viterbi_val):
+            generate_viterbi_values( (n - 1), label, word_list, words_unique, labels_unique, emission_params, transmission_params)
 
-    # Use viterbi values from n-1 to generate current viterbi value
-    for tag in tags_unique:
-        # Here, we use a try-except block because our emission parameters only contain emissions which appeared in our datasets
-        # Thus, any unobserved emission will throw a KeyError, however it's value should be -inf, so we just catch the Error and proceed to the next tag
-        # If transmission_params gives 0, math.log will throw a valueError, thus we catch it and skip the current tag since 0 means we should never consider it
+    for label in labels_unique:
         try:
             if word_list[n - 1] in words_unique:
                 try:
-                    value = viterbi_val[(n - 1, tag)] + math.log(
-                        emission_params[(current_label, word_list[n - 1])]
-                        * transmission_params[tag][current_label]
-                    )
+                    value = viterbi_val[(n - 1, label)] + math.log(
+                        emission_params[(current_label, word_list[n - 1])] * transmission_params[label][current_label])
+                # handle case where it isnt inside the dataset
                 except KeyError:
                     continue
             else:
-                value = viterbi_val[(n - 1, tag)] + math.log(
-                    emission_params[(current_label, UNK)]
-                    * transmission_params[tag][current_label]
-                )
+                value = viterbi_val[(n - 1, label)] + math.log( emission_params[(current_label, UNK)] * transmission_params[label][current_label])
+        # handle zero error
         except ValueError:
             continue
 
@@ -254,93 +240,79 @@ def generate_viterbi_values(n, current_label, word_list, words_unique, tags_uniq
     viterbi_val[(n, current_label)] = current_max_viterbi_value
 
 
-# function to kickstart viterbi recursive chain, and add (n+1, STOP) to veterbi_values
-def start_viterbi(
-    word_list, words_unique, tags_unique, emission_params, transmission_params
-):
+def start_v(word_list, words_unique, labels_unique, emission_params, transmission_params):
     global viterbi_val
-    max_final_viterbi_value = -sys.float_info.max
+
+    # Smallest possible float
+    max_final_v_value = -sys.float_info.max
 
     n = len(word_list)
 
-    # Recursive call to generate viterbi_values for (n, tag)
-    for tag in tags_unique:
-        generate_viterbi_values(
-            n,
-            tag,
-            word_list,
-            words_unique,
-            tags_unique,
-            emission_params,
-            transmission_params,
-        )
+    for label in labels_unique:
+        generate_viterbi_values(n,label,word_list,words_unique,labels_unique,emission_params,transmission_params)
 
-    # Use viterbi values from n to generate viterbi value for (n+1, STOP)
-    for tag in tags_unique:
+    # viterbi values for (n+1, stop)
+    for label in labels_unique:
         try:
-            value = viterbi_val[(n, tag)] + math.log(
-                transmission_params[tag][STOP_TAG]
-            )
+            value = viterbi_val[(n, label)] + math.log(transmission_params[label][STOP_TAG])
         except ValueError:
             continue
-        max_final_viterbi_value = max(max_final_viterbi_value, value)
+        max_final_v_value = max(max_final_v_value, value)
 
-    viterbi_val[(n + 1, STOP_TAG)] = max_final_viterbi_value
+    viterbi_val[(n + 1, STOP_TAG)] = max_final_v_value
 
 
-def generate_predictions_viterbi(word_list, tags_unique, transmission_params):
+def generate_predictions_viterbi(word_list, labels_unique, trans_params):
     global viterbi_val
 
     n = len(word_list)
 
-    generated_tag_list = ['' for i in range(n)]
+    generated_label_list = ['' for i in range(n)]
+    current_best_label = 'O'
+    current_best_label_value = -sys.float_info.max
 
-    # Compute tag for n
-    current_best_tag = 'O'
-    current_best_tag_value = -sys.float_info.max
-
-    for tag in tags_unique:
+    for label in labels_unique:
         try:
-            value = viterbi_val[(n, tag)] + math.log(
-                transmission_params[tag][STOP_TAG]
-            )
+            value = viterbi_val[(n, label)] + math.log(trans_params[label][STOP_TAG])
         except ValueError:
             continue
-        if value > current_best_tag_value:
-            current_best_tag = tag
-            current_best_tag_value = value
+        # to get max value
+        if value > current_best_label_value:
+            current_best_label = label
+            current_best_label_value = value
 
-    generated_tag_list[n - 1] = current_best_tag
+    generated_label_list[n - 1] = current_best_label
 
-    # Generate predictions starting from n-1 going down to 1
+
+    # get predictions from the back
     for i in range(n - 1, 0, -1):
-        current_best_tag = 'O'
-        current_best_tag_value = -sys.float_info.max
+        current_best_label = 'O'
+        current_best_label_value = -sys.float_info.max
 
-        for tag in tags_unique:
+        for label in labels_unique:
             try:
-                value = viterbi_val[(i, tag)] + math.log(
-                    transmission_params[tag][generated_tag_list[i]]
+                value = viterbi_val[(i, label)] + math.log(
+                    trans_params[label][generated_label_list[i]]
                 )
             except ValueError:
                 continue
-            if value > current_best_tag_value:
-                current_best_tag = tag
-                current_best_tag_value = value
+            if value > current_best_label_value:
+                current_best_label = label
+                current_best_label_value = value
 
-        generated_tag_list[i - 1] = current_best_tag
-    return generated_tag_list
+        generated_label_list[i - 1] = current_best_label
+
+    return generated_label_list
 
 
 def write_p2(predicted_file, words_list, tags_list):
     assert len(words_list) == len(tags_list)
 
     with open(predicted_file, 'w', encoding='utf8') as f:
-        for words, tags in zip(
-            words_list, tags_list
-        ):  # Unpack all sentences and list of tags
+        # unpack
+        for words, tags in zip(words_list, tags_list): 
             assert len(words) == len(tags)
-            for word, tag in zip(words, tags):  # Unpack all words and tags
+            for word, tag in zip(words, tags):
                 f.write(f'{word} {tag}\n')
             f.write('\n')
 
@@ -356,11 +328,11 @@ ES_unique_tags = unique_element(ES_tags)
 ES_transition_pair_count = transition_pairs(ES_tags_with_start_stop)
 ES_transition_parameters = mle_to_transition(ES_unique_tags, ES_transition_pair_count, ES_tags_with_start_stop)
 
-# Run and output Viterbi for ES
+# Viterbi for ES
 ES_predicted_tags_list = []
 for word in ES_test_words:
     viterbi_val = {}
-    start_viterbi(
+    start_v(
         word,
         ES_unique_words,
         ES_unique_tags,
@@ -386,11 +358,11 @@ RU_unique_tags = unique_element(RU_tags)
 RU_transition_pair_count = transition_pairs(RU_tags_with_start_stop)
 RU_transition_parameters = mle_to_transition(RU_unique_tags, RU_transition_pair_count, RU_tags_with_start_stop)
 
-# Run and output Viterbi for RU
+# Viterbi for RU
 RU_predicted_tags_list = []
 for word in RU_test_words:
     viterbi_val = {}
-    start_viterbi(
+    start_v(
         word,
         RU_unique_words,
         RU_unique_tags,
@@ -402,21 +374,19 @@ for word in RU_test_words:
     )
     RU_predicted_tags_list.append(RU_generated_tag_list)
 
-write_p2(
-    RU_P2, RU_test_words, RU_predicted_tags_list
-)
+write_p2(RU_P2, RU_test_words, RU_predicted_tags_list)
 
 print('ES dataset results---------')
 evaluateScores(ES_DEV_OUT_ORIGINAL, ES_P2)
-
 print('\nRU dataset results---------')
 evaluateScores(RU_DEV_OUT_ORIGINAL, RU_P2)
 
 
 
 # TODO: Part 3
-def get_top_scores_from_dictionary(d, k=5):
-    return collections.OrderedDict(sorted(d.items(), reverse=True)[:k])
+def get_top_5(d):
+    # get top 5
+    return collections.OrderedDict(sorted(d.items(), reverse=True)[:5])
 
 
 def generate_predictions_viterbi_part_3(word_list, tags_unique, transmission_params):
@@ -433,23 +403,20 @@ def generate_predictions_viterbi_part_3(word_list, tags_unique, transmission_par
         except ValueError:
             continue
 
-    total_viterbi_scores = get_top_scores_from_dictionary(total_viterbi_scores)
+    total_viterbi_scores = get_top_5(total_viterbi_scores)
 
-    # Generate predictions starting from n-1 going down to 1
     for i in range(n - 1, 0, -1):
         link = {}
         for tags in total_viterbi_scores.values():
 
             for tag in tags_unique:
                 try:
-                    value = viterbi_val[(i, tag)] + math.log(
-                        transmission_params[tag][tags[0]]
-                    )  # we take the first tag because we are working backwards
+                    value = viterbi_val[(i, tag)] + math.log(transmission_params[tag][tags[0]])
                     link[value] = [tag] + tags
                 except ValueError:
                     continue
 
-        total_viterbi_scores = get_top_scores_from_dictionary(link)
+        total_viterbi_scores = get_top_5(link)
     return list(total_viterbi_scores.values())[-1]
 
 
@@ -484,11 +451,11 @@ RU_transition_parameters = mle_to_transition(
     RU_unique_tags, RU_transition_pair_count, RU_tags_with_start_stop
 )
 
-# Run and output Viterbi for ES
+# Viterbi for ES
 ES_predicted_tags_list = []
 for word in ES_test_words:
     viterbi_val = {}
-    start_viterbi(
+    start_v(
         word,
         ES_unique_words,
         ES_unique_tags,
@@ -504,11 +471,11 @@ write_to_output_file(
     ES_P3, ES_test_words, ES_predicted_tags_list
 )
 
-# Run and output Viterbi for RU
+# Viterbi for RU
 RU_predicted_tags_list = []
 for word in RU_test_words:
     viterbi_val = {}
-    start_viterbi(
+    start_v(
         word,
         RU_unique_words,
         RU_unique_tags,
@@ -534,31 +501,26 @@ evaluateScores(RU_DEV_OUT_ORIGINAL, RU_P3)
 
 # TODO: Part 4
 def get_transition_using_add1_estimate(
-    unique_tags, transition_pair_count, tags_with_start_stop
+    unique_labels, transition_pair_count, labels_with_start_stop
 ):
-    unique_tags = [STARTING_TAG] + unique_tags + [STOP_TAG]
+    unique_labels = [STARTING_TAG] + unique_labels + [STOP_TAG]
     transition = {}
-    for u in unique_tags[:-1]:  # omit STOP
+    for i in unique_labels[:-1]:
         transition_row = {}
-        for v in unique_tags[1:]:  # omit START
-            # transition row now starts from 1
-            transition_row[v] = 1.0
-        transition[u] = transition_row
+        for j in unique_labels[1:]:
+            transition_row[j] = 1.0
+        transition[i] = transition_row
 
-    # populate transition parameters with counts
-    for u, v in transition_pair_count:
-        transition[u][v] += transition_pair_count[(u, v)]
+    for i, j in transition_pair_count:
+        transition[i][j] += transition_pair_count[(i, j)]
 
-    # divide transition_count by count_yi, to get probability
-    for u, transition_row in transition.items():
-        # have to add length of unique tags
-        count_yi = count_label(u, tags_with_start_stop) + len(unique_tags) - 1
-        # words in training set
-        for v, transition_count in transition_row.items():
+    for i, transition_row in transition.items():
+        count_yi = count_label(i, labels_with_start_stop) + len(unique_labels) - 1
+        for j, transition_count in transition_row.items():
             if count_yi == 0:
-                transition[u][v] = 0.0
+                transition[i][j] = 0.0
             else:
-                transition[u][v] = transition_count / count_yi
+                transition[i][j] = transition_count / count_yi
 
     return transition
 
@@ -594,11 +556,11 @@ RU_transition_parameters = get_transition_using_add1_estimate(
     RU_unique_tags, RU_transition_pair_count, RU_tags_with_start_stop
 )
 
-# Run and output Viterbi for ES
+# Viterbi for ES
 ES_predicted_tags_list = []
 for word in ES_test_words:
     viterbi_val = {}
-    start_viterbi(
+    start_v(
         word,
         ES_unique_words,
         ES_unique_tags,
@@ -614,11 +576,11 @@ write_to_output_file(
     ES_P4, ES_test_words, ES_predicted_tags_list
 )
 
-# Run and output Viterbi for RU
+# Viterbi for RU
 RU_predicted_tags_list = []
 for word in RU_test_words:
     viterbi_val = {}
-    start_viterbi(
+    start_v(
         word,
         RU_unique_words,
         RU_unique_tags,
@@ -672,11 +634,11 @@ RU_transition_parameters = get_transition_using_add1_estimate(
     RU_unique_tags, RU_transition_pair_count, RU_tags_with_start_stop
 )
 
-# Run and output Viterbi for ES
+# Viterbi for ES
 ES_predicted_tags_list = []
 for word in ES_test_words:
     viterbi_val = {}
-    start_viterbi(
+    start_v(
         word,
         ES_unique_words,
         ES_unique_tags,
@@ -692,11 +654,11 @@ write_to_output_file(
     ES_TEST_OUT, ES_test_words, ES_predicted_tags_list
 )
 
-# Run and output Viterbi for RU
+# Viterbi for RU
 RU_predicted_tags_list = []
 for word in RU_test_words:
     viterbi_val = {}
-    start_viterbi(
+    start_v(
         word,
         RU_unique_words,
         RU_unique_tags,
