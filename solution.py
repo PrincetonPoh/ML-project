@@ -1,4 +1,4 @@
-from evaluate import *
+from Eval.evalResult import *
 from file_processing import *
 import math
 import sys
@@ -96,25 +96,45 @@ def write_p1(predicted_file, test_file, highest_prob_tag):
     f.close()
 
 
+def evaluateScores(actual_file, predicted_file):
+    with open(predicted_file, encoding="utf8") as f:
+        predicted = f.read().splitlines()
+
+    with open(actual_file, encoding="utf8") as f:
+        actual = f.read().splitlines()
+
+    compare_observed_to_predicted(get_observed(actual), get_predicted(predicted))
+
+
+def write_to_output_file(predicted_file, words_list, tags_list):
+    assert len(words_list) == len(tags_list)
+
+    with open(predicted_file, "w", encoding="utf8") as f:
+        for words, tags in zip(words_list, tags_list):
+            assert len(words) == len(tags)
+            for word, tag in zip(words, tags):
+                f.write(f"{word} {tag}\n")
+            f.write("\n")
+
 print('Part 1 ###################################################')
-# ES dataset
-ES_train_data = process_train_file_part_1(ES_TRAIN)
-ES_test_data = process_test_file_part_1(ES_TEST)
-ES_emission_parameters = mle_to_emission(ES_train_data)
-ES_most_probable_tag = simple_sentiment_analysis(ES_emission_parameters)
-write_p1(ES_P1, ES_test_data, ES_most_probable_tag)
+# # ES dataset
+# ES_train_data = process_train_file_part_1(ES_TRAIN)
+# ES_test_data = process_test_file_part_1(ES_TEST)
+# ES_emission_parameters = mle_to_emission(ES_train_data)
+# ES_most_probable_tag = simple_sentiment_analysis(ES_emission_parameters)
+# write_p1(ES_P1, ES_test_data, ES_most_probable_tag)
 
-# RU dataset
-RU_train_data = process_train_file_part_1(RU_TRAIN)
-RU_test_data = process_test_file_part_1(RU_TEST)
-RU_emission_parameters = mle_to_emission(RU_train_data)
-RU_most_probable_tag = simple_sentiment_analysis(RU_emission_parameters)
-write_p1(RU_P1, RU_test_data, RU_most_probable_tag)
+# # RU dataset
+# RU_train_data = process_train_file_part_1(RU_TRAIN)
+# RU_test_data = process_test_file_part_1(RU_TEST)
+# RU_emission_parameters = mle_to_emission(RU_train_data)
+# RU_most_probable_tag = simple_sentiment_analysis(RU_emission_parameters)
+# write_p1(RU_P1, RU_test_data, RU_most_probable_tag)
 
-print('ES dataset results---------')
-evaluateScores(ES_DEV_OUT_ORIGINAL, ES_P1)
-print('\nRU dataset results---------')
-evaluateScores(RU_DEV_OUT_ORIGINAL, RU_P1)
+# print('ES dataset results---------')
+# evaluateScores(ES_DEV_OUT_ORIGINAL, ES_P1)
+# print('\nRU dataset results---------')
+# evaluateScores(RU_DEV_OUT_ORIGINAL, RU_P1)
 
 
 
@@ -318,68 +338,68 @@ def write_p2(predicted_file, words_list, tags_list):
 
 
 print('Part 2 ###################################################')
-# ES dataset
-ES_train_data = process_train_file_part_1(ES_TRAIN)
-ES_emission_parameters = mle_to_emission(ES_train_data)
-ES_tags, ES_tags_with_start_stop, ES_train_words = process_train_file_part_2(ES_TRAIN)
-ES_test_words = process_test_file_part_2(ES_TEST)
-ES_unique_words = unique_element(ES_train_words)
-ES_unique_tags = unique_element(ES_tags)
-ES_transition_pair_count = transition_pairs(ES_tags_with_start_stop)
-ES_transition_parameters = mle_to_transition(ES_unique_tags, ES_transition_pair_count, ES_tags_with_start_stop)
+# # ES dataset
+# ES_train_data = process_train_file_part_1(ES_TRAIN)
+# ES_emission_parameters = mle_to_emission(ES_train_data)
+# ES_tags, ES_tags_with_start_stop, ES_train_words = process_train_file_part_2(ES_TRAIN)
+# ES_test_words = process_test_file_part_2(ES_TEST)
+# ES_unique_words = unique_element(ES_train_words)
+# ES_unique_tags = unique_element(ES_tags)
+# ES_transition_pair_count = transition_pairs(ES_tags_with_start_stop)
+# ES_transition_parameters = mle_to_transition(ES_unique_tags, ES_transition_pair_count, ES_tags_with_start_stop)
 
-# Viterbi for ES
-ES_predicted_tags_list = []
-for word in ES_test_words:
-    viterbi_val = {}
-    start_v(
-        word,
-        ES_unique_words,
-        ES_unique_tags,
-        ES_emission_parameters,
-        ES_transition_parameters,
-    )
-    ES_generated_tag_list = generate_predictions_viterbi(
-        word, ES_unique_tags, ES_transition_parameters
-    )
-    ES_predicted_tags_list.append(ES_generated_tag_list)
+# # Viterbi for ES
+# ES_predicted_tags_list = []
+# for word in ES_test_words:
+#     viterbi_val = {}
+#     start_v(
+#         word,
+#         ES_unique_words,
+#         ES_unique_tags,
+#         ES_emission_parameters,
+#         ES_transition_parameters,
+#     )
+#     ES_generated_tag_list = generate_predictions_viterbi(
+#         word, ES_unique_tags, ES_transition_parameters
+#     )
+#     ES_predicted_tags_list.append(ES_generated_tag_list)
 
-write_p2(
-    ES_P2, ES_test_words, ES_predicted_tags_list
-)
+# write_p2(
+#     ES_P2, ES_test_words, ES_predicted_tags_list
+# )
 
-# RU dataset
-RU_train_data = process_train_file_part_1(RU_TRAIN)
-RU_emission_parameters = mle_to_emission(RU_train_data)
-RU_tags, RU_tags_with_start_stop, RU_train_words = process_train_file_part_2(RU_TRAIN)
-RU_test_words = process_test_file_part_2(RU_TEST)
-RU_unique_words = unique_element(RU_train_words)
-RU_unique_tags = unique_element(RU_tags)
-RU_transition_pair_count = transition_pairs(RU_tags_with_start_stop)
-RU_transition_parameters = mle_to_transition(RU_unique_tags, RU_transition_pair_count, RU_tags_with_start_stop)
+# # RU dataset
+# RU_train_data = process_train_file_part_1(RU_TRAIN)
+# RU_emission_parameters = mle_to_emission(RU_train_data)
+# RU_tags, RU_tags_with_start_stop, RU_train_words = process_train_file_part_2(RU_TRAIN)
+# RU_test_words = process_test_file_part_2(RU_TEST)
+# RU_unique_words = unique_element(RU_train_words)
+# RU_unique_tags = unique_element(RU_tags)
+# RU_transition_pair_count = transition_pairs(RU_tags_with_start_stop)
+# RU_transition_parameters = mle_to_transition(RU_unique_tags, RU_transition_pair_count, RU_tags_with_start_stop)
 
-# Viterbi for RU
-RU_predicted_tags_list = []
-for word in RU_test_words:
-    viterbi_val = {}
-    start_v(
-        word,
-        RU_unique_words,
-        RU_unique_tags,
-        RU_emission_parameters,
-        RU_transition_parameters,
-    )
-    RU_generated_tag_list = generate_predictions_viterbi(
-        word, RU_unique_tags, RU_transition_parameters
-    )
-    RU_predicted_tags_list.append(RU_generated_tag_list)
+# # Viterbi for RU
+# RU_predicted_tags_list = []
+# for word in RU_test_words:
+#     viterbi_val = {}
+#     start_v(
+#         word,
+#         RU_unique_words,
+#         RU_unique_tags,
+#         RU_emission_parameters,
+#         RU_transition_parameters,
+#     )
+#     RU_generated_tag_list = generate_predictions_viterbi(
+#         word, RU_unique_tags, RU_transition_parameters
+#     )
+#     RU_predicted_tags_list.append(RU_generated_tag_list)
 
-write_p2(RU_P2, RU_test_words, RU_predicted_tags_list)
+# write_p2(RU_P2, RU_test_words, RU_predicted_tags_list)
 
-print('ES dataset results---------')
-evaluateScores(ES_DEV_OUT_ORIGINAL, ES_P2)
-print('\nRU dataset results---------')
-evaluateScores(RU_DEV_OUT_ORIGINAL, RU_P2)
+# print('ES dataset results---------')
+# evaluateScores(ES_DEV_OUT_ORIGINAL, ES_P2)
+# print('\nRU dataset results---------')
+# evaluateScores(RU_DEV_OUT_ORIGINAL, RU_P2)
 
 
 
@@ -421,81 +441,81 @@ def generate_predictions_viterbi_part_3(word_list, tags_unique, transmission_par
 
 
 print('Part 3 ###################################################')
-ES_train_data = process_train_file_part_1(ES_TRAIN)
-ES_emission_parameters = mle_to_emission(ES_train_data)
+# ES_train_data = process_train_file_part_1(ES_TRAIN)
+# ES_emission_parameters = mle_to_emission(ES_train_data)
 
-ES_tags, ES_tags_with_start_stop, ES_train_words = process_train_file_part_2(
-    ES_TRAIN
-)
-ES_test_words = process_test_file_part_2(ES_TEST)
-ES_unique_words = unique_element(ES_train_words)
-ES_unique_tags = unique_element(ES_tags)
+# ES_tags, ES_tags_with_start_stop, ES_train_words = process_train_file_part_2(
+#     ES_TRAIN
+# )
+# ES_test_words = process_test_file_part_2(ES_TEST)
+# ES_unique_words = unique_element(ES_train_words)
+# ES_unique_tags = unique_element(ES_tags)
 
-ES_transition_pair_count = transition_pairs(ES_tags_with_start_stop)
-ES_transition_parameters = mle_to_transition(
-    ES_unique_tags, ES_transition_pair_count, ES_tags_with_start_stop
-)
+# ES_transition_pair_count = transition_pairs(ES_tags_with_start_stop)
+# ES_transition_parameters = mle_to_transition(
+#     ES_unique_tags, ES_transition_pair_count, ES_tags_with_start_stop
+# )
 
-RU_train_data = process_train_file_part_1(RU_TRAIN)
-RU_emission_parameters = mle_to_emission(RU_train_data)
+# RU_train_data = process_train_file_part_1(RU_TRAIN)
+# RU_emission_parameters = mle_to_emission(RU_train_data)
 
-RU_tags, RU_tags_with_start_stop, RU_train_words = process_train_file_part_2(
-    RU_TRAIN
-)
-RU_test_words = process_test_file_part_2(RU_TEST)
-RU_unique_words = unique_element(RU_train_words)
-RU_unique_tags = unique_element(RU_tags)
+# RU_tags, RU_tags_with_start_stop, RU_train_words = process_train_file_part_2(
+#     RU_TRAIN
+# )
+# RU_test_words = process_test_file_part_2(RU_TEST)
+# RU_unique_words = unique_element(RU_train_words)
+# RU_unique_tags = unique_element(RU_tags)
 
-RU_transition_pair_count = transition_pairs(RU_tags_with_start_stop)
-RU_transition_parameters = mle_to_transition(
-    RU_unique_tags, RU_transition_pair_count, RU_tags_with_start_stop
-)
+# RU_transition_pair_count = transition_pairs(RU_tags_with_start_stop)
+# RU_transition_parameters = mle_to_transition(
+#     RU_unique_tags, RU_transition_pair_count, RU_tags_with_start_stop
+# )
 
-# Viterbi for ES
-ES_predicted_tags_list = []
-for word in ES_test_words:
-    viterbi_val = {}
-    start_v(
-        word,
-        ES_unique_words,
-        ES_unique_tags,
-        ES_emission_parameters,
-        ES_transition_parameters,
-    )
-    ES_generated_tag_list = generate_predictions_viterbi_part_3(
-        word, ES_unique_tags, ES_transition_parameters
-    )
-    ES_predicted_tags_list.append(ES_generated_tag_list)
+# # Viterbi for ES
+# ES_predicted_tags_list = []
+# for word in ES_test_words:
+#     viterbi_val = {}
+#     start_v(
+#         word,
+#         ES_unique_words,
+#         ES_unique_tags,
+#         ES_emission_parameters,
+#         ES_transition_parameters,
+#     )
+#     ES_generated_tag_list = generate_predictions_viterbi_part_3(
+#         word, ES_unique_tags, ES_transition_parameters
+#     )
+#     ES_predicted_tags_list.append(ES_generated_tag_list)
 
-write_to_output_file(
-    ES_P3, ES_test_words, ES_predicted_tags_list
-)
+# write_to_output_file(
+#     ES_P3, ES_test_words, ES_predicted_tags_list
+# )
 
-# Viterbi for RU
-RU_predicted_tags_list = []
-for word in RU_test_words:
-    viterbi_val = {}
-    start_v(
-        word,
-        RU_unique_words,
-        RU_unique_tags,
-        RU_emission_parameters,
-        RU_transition_parameters,
-    )
-    RU_generated_tag_list = generate_predictions_viterbi_part_3(
-        word, RU_unique_tags, RU_transition_parameters
-    )
-    RU_predicted_tags_list.append(RU_generated_tag_list)
+# # Viterbi for RU
+# RU_predicted_tags_list = []
+# for word in RU_test_words:
+#     viterbi_val = {}
+#     start_v(
+#         word,
+#         RU_unique_words,
+#         RU_unique_tags,
+#         RU_emission_parameters,
+#         RU_transition_parameters,
+#     )
+#     RU_generated_tag_list = generate_predictions_viterbi_part_3(
+#         word, RU_unique_tags, RU_transition_parameters
+#     )
+#     RU_predicted_tags_list.append(RU_generated_tag_list)
 
-write_to_output_file(
-    RU_P3, RU_test_words, RU_predicted_tags_list
-)
+# write_to_output_file(
+#     RU_P3, RU_test_words, RU_predicted_tags_list
+# )
 
-print('ES dataset results---------')
-evaluateScores(ES_DEV_OUT_ORIGINAL, ES_P3)
+# print('ES dataset results---------')
+# evaluateScores(ES_DEV_OUT_ORIGINAL, ES_P3)
 
-print('\nRU dataset results---------')
-evaluateScores(RU_DEV_OUT_ORIGINAL, RU_P3)
+# print('\nRU dataset results---------')
+# evaluateScores(RU_DEV_OUT_ORIGINAL, RU_P3)
 
 
 
@@ -526,150 +546,149 @@ def get_transition_using_add1_estimate(
 
 
 print('Part 4 (i) ###################################################')
-ES_train_data = process_train_file_part_1(ES_TRAIN)
-ES_emission_parameters = mle_to_emission(ES_train_data)
+# ES_train_data = process_train_file_part_1(ES_TRAIN)
+# ES_emission_parameters = mle_to_emission(ES_train_data)
 
-ES_tags, ES_tags_with_start_stop, ES_train_words = process_train_file_part_2(
-    ES_TRAIN
-)
-ES_test_words = process_test_file_part_2(ES_P4)
-ES_unique_words = unique_element(ES_train_words)
-ES_unique_tags = unique_element(ES_tags)
+# ES_tags, ES_tags_with_start_stop, ES_train_words = process_train_file_part_2(
+#     ES_TRAIN
+# )
+# ES_test_words = process_test_file_part_2(ES_P4)
+# ES_unique_words = unique_element(ES_train_words)
+# ES_unique_tags = unique_element(ES_tags)
 
-ES_transition_pair_count = transition_pairs(ES_tags_with_start_stop)
-ES_transition_parameters = get_transition_using_add1_estimate(
-    ES_unique_tags, ES_transition_pair_count, ES_tags_with_start_stop
-)
+# ES_transition_pair_count = transition_pairs(ES_tags_with_start_stop)
+# ES_transition_parameters = get_transition_using_add1_estimate(
+#     ES_unique_tags, ES_transition_pair_count, ES_tags_with_start_stop
+# )
 
-RU_train_data = process_train_file_part_1(RU_TRAIN)
-RU_emission_parameters = mle_to_emission(RU_train_data)
+# RU_train_data = process_train_file_part_1(RU_TRAIN)
+# RU_emission_parameters = mle_to_emission(RU_train_data)
 
-RU_tags, RU_tags_with_start_stop, RU_train_words = process_train_file_part_2(
-    RU_TRAIN
-)
-RU_test_words = process_test_file_part_2(RU_P4)
-RU_unique_words = unique_element(RU_train_words)
-RU_unique_tags = unique_element(RU_tags)
+# RU_tags, RU_tags_with_start_stop, RU_train_words = process_train_file_part_2(
+#     RU_TRAIN
+# )
+# RU_test_words = process_test_file_part_2(RU_P4)
+# RU_unique_words = unique_element(RU_train_words)
+# RU_unique_tags = unique_element(RU_tags)
 
-RU_transition_pair_count = transition_pairs(RU_tags_with_start_stop)
-RU_transition_parameters = get_transition_using_add1_estimate(
-    RU_unique_tags, RU_transition_pair_count, RU_tags_with_start_stop
-)
+# RU_transition_pair_count = transition_pairs(RU_tags_with_start_stop)
+# RU_transition_parameters = get_transition_using_add1_estimate(
+#     RU_unique_tags, RU_transition_pair_count, RU_tags_with_start_stop
+# )
 
-# Viterbi for ES
-ES_predicted_tags_list = []
-for word in ES_test_words:
-    viterbi_val = {}
-    start_v(
-        word,
-        ES_unique_words,
-        ES_unique_tags,
-        ES_emission_parameters,
-        ES_transition_parameters,
-    )
-    ES_generated_tag_list = generate_predictions_viterbi(
-        word, ES_unique_tags, ES_transition_parameters
-    )
-    ES_predicted_tags_list.append(ES_generated_tag_list)
+# # Viterbi for ES
+# ES_predicted_tags_list = []
+# for word in ES_test_words:
+#     viterbi_val = {}
+#     start_v(
+#         word,
+#         ES_unique_words,
+#         ES_unique_tags,
+#         ES_emission_parameters,
+#         ES_transition_parameters,
+#     )
+#     ES_generated_tag_list = generate_predictions_viterbi(
+#         word, ES_unique_tags, ES_transition_parameters
+#     )
+#     ES_predicted_tags_list.append(ES_generated_tag_list)
 
-write_to_output_file(
-    ES_P4, ES_test_words, ES_predicted_tags_list
-)
+# write_to_output_file(
+#     ES_P4, ES_test_words, ES_predicted_tags_list
+# )
 
-# Viterbi for RU
-RU_predicted_tags_list = []
-for word in RU_test_words:
-    viterbi_val = {}
-    start_v(
-        word,
-        RU_unique_words,
-        RU_unique_tags,
-        RU_emission_parameters,
-        RU_transition_parameters,
-    )
-    RU_generated_tag_list = generate_predictions_viterbi(
-        word, RU_unique_tags, RU_transition_parameters
-    )
-    RU_predicted_tags_list.append(RU_generated_tag_list)
+# # Viterbi for RU
+# RU_predicted_tags_list = []
+# for word in RU_test_words:
+#     viterbi_val = {}
+#     start_v(
+#         word,
+#         RU_unique_words,
+#         RU_unique_tags,
+#         RU_emission_parameters,
+#         RU_transition_parameters,
+#     )
+#     RU_generated_tag_list = generate_predictions_viterbi(
+#         word, RU_unique_tags, RU_transition_parameters
+#     )
+#     RU_predicted_tags_list.append(RU_generated_tag_list)
 
-write_to_output_file(
-    RU_P4, RU_test_words, RU_predicted_tags_list
-)
+# write_to_output_file(
+#     RU_P4, RU_test_words, RU_predicted_tags_list
+# )
 
-print('ES dataset results---------')
-evaluateScores(ES_DEV_OUT_ORIGINAL, ES_P4)
-
-print('\nRU dataset results---------')
-evaluateScores(RU_DEV_OUT_ORIGINAL, RU_P4)
+# print('ES dataset results---------')
+# evaluateScores(ES_DEV_OUT_ORIGINAL, ES_P4)
+# print('\nRU dataset results---------')
+# evaluateScores(RU_DEV_OUT_ORIGINAL, RU_P4)
 
 
 print('Part 4 (ii) ###################################################')
-ES_train_data = process_train_file_part_1(ES_TRAIN)
-ES_emission_parameters = mle_to_emission(ES_train_data)
+# ES_train_data = process_train_file_part_1(ES_TRAIN)
+# ES_emission_parameters = mle_to_emission(ES_train_data)
 
-ES_tags, ES_tags_with_start_stop, ES_train_words = process_train_file_part_2(
-    ES_TRAIN
-)
-ES_test_words = process_test_file_part_2(ES_TEST_IN)
-ES_unique_words = unique_element(ES_train_words)
-ES_unique_tags = unique_element(ES_tags)
+# ES_tags, ES_tags_with_start_stop, ES_train_words = process_train_file_part_2(
+#     ES_TRAIN
+# )
+# ES_test_words = process_test_file_part_2(ES_TEST_IN)
+# ES_unique_words = unique_element(ES_train_words)
+# ES_unique_tags = unique_element(ES_tags)
 
-ES_transition_pair_count = transition_pairs(ES_tags_with_start_stop)
-ES_transition_parameters = get_transition_using_add1_estimate(
-    ES_unique_tags, ES_transition_pair_count, ES_tags_with_start_stop
-)
+# ES_transition_pair_count = transition_pairs(ES_tags_with_start_stop)
+# ES_transition_parameters = get_transition_using_add1_estimate(
+#     ES_unique_tags, ES_transition_pair_count, ES_tags_with_start_stop
+# )
 
-RU_train_data = process_train_file_part_1(RU_TRAIN)
-RU_emission_parameters = mle_to_emission(RU_train_data)
+# RU_train_data = process_train_file_part_1(RU_TRAIN)
+# RU_emission_parameters = mle_to_emission(RU_train_data)
 
-RU_tags, RU_tags_with_start_stop, RU_train_words = process_train_file_part_2(
-    RU_TRAIN
-)
-RU_test_words = process_test_file_part_2(RU_P4)
-RU_unique_words = unique_element(RU_train_words)
-RU_unique_tags = unique_element(RU_tags)
+# RU_tags, RU_tags_with_start_stop, RU_train_words = process_train_file_part_2(
+#     RU_TRAIN
+# )
+# RU_test_words = process_test_file_part_2(RU_P4)
+# RU_unique_words = unique_element(RU_train_words)
+# RU_unique_tags = unique_element(RU_tags)
 
-RU_transition_pair_count = transition_pairs(RU_tags_with_start_stop)
-RU_transition_parameters = get_transition_using_add1_estimate(
-    RU_unique_tags, RU_transition_pair_count, RU_tags_with_start_stop
-)
+# RU_transition_pair_count = transition_pairs(RU_tags_with_start_stop)
+# RU_transition_parameters = get_transition_using_add1_estimate(
+#     RU_unique_tags, RU_transition_pair_count, RU_tags_with_start_stop
+# )
 
-# Viterbi for ES
-ES_predicted_tags_list = []
-for word in ES_test_words:
-    viterbi_val = {}
-    start_v(
-        word,
-        ES_unique_words,
-        ES_unique_tags,
-        ES_emission_parameters,
-        ES_transition_parameters,
-    )
-    ES_generated_tag_list = generate_predictions_viterbi(
-        word, ES_unique_tags, ES_transition_parameters
-    )
-    ES_predicted_tags_list.append(ES_generated_tag_list)
+# # Viterbi for ES
+# ES_predicted_tags_list = []
+# for word in ES_test_words:
+#     viterbi_val = {}
+#     start_v(
+#         word,
+#         ES_unique_words,
+#         ES_unique_tags,
+#         ES_emission_parameters,
+#         ES_transition_parameters,
+#     )
+#     ES_generated_tag_list = generate_predictions_viterbi(
+#         word, ES_unique_tags, ES_transition_parameters
+#     )
+#     ES_predicted_tags_list.append(ES_generated_tag_list)
 
-write_to_output_file(
-    ES_TEST_OUT, ES_test_words, ES_predicted_tags_list
-)
+# write_to_output_file(
+#     ES_TEST_OUT, ES_test_words, ES_predicted_tags_list
+# )
 
-# Viterbi for RU
-RU_predicted_tags_list = []
-for word in RU_test_words:
-    viterbi_val = {}
-    start_v(
-        word,
-        RU_unique_words,
-        RU_unique_tags,
-        RU_emission_parameters,
-        RU_transition_parameters,
-    )
-    RU_generated_tag_list = generate_predictions_viterbi(
-        word, RU_unique_tags, RU_transition_parameters
-    )
-    RU_predicted_tags_list.append(RU_generated_tag_list)
+# # Viterbi for RU
+# RU_predicted_tags_list = []
+# for word in RU_test_words:
+#     viterbi_val = {}
+#     start_v(
+#         word,
+#         RU_unique_words,
+#         RU_unique_tags,
+#         RU_emission_parameters,
+#         RU_transition_parameters,
+#     )
+#     RU_generated_tag_list = generate_predictions_viterbi(
+#         word, RU_unique_tags, RU_transition_parameters
+#     )
+#     RU_predicted_tags_list.append(RU_generated_tag_list)
 
-write_to_output_file(
-    RU_TEST_OUT, RU_test_words, RU_predicted_tags_list
-)
+# write_to_output_file(
+#     RU_TEST_OUT, RU_test_words, RU_predicted_tags_list
+# )
