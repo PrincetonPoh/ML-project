@@ -1,8 +1,8 @@
-# helper functions to preprocess datasets
-from constants import START_TAG, STOP_TAG
+STARTING_TAG = 'START'
+STOP_TAG = 'STOP'
 
 
-def _preprocess_training_file1(file_path):
+def process_train_file_part_1(file_path):
     with open(file_path, encoding="utf8") as f:
         data = f.read().splitlines()
         data[:] = [x for x in data if x]
@@ -15,11 +15,11 @@ def _preprocess_training_file1(file_path):
             output.append(i)
         else:
             output.append(i)
-
+    # f.close()
     return output
 
 
-def _preprocess_testing_file1(path):
+def process_test_file_part_1(path):
     with open(path, encoding="utf8") as f:
         data = f.read().splitlines()
 
@@ -27,21 +27,22 @@ def _preprocess_testing_file1(path):
     for word in data:
         output.append(word)
 
+    # f.close()
     return output
 
 
-def _preprocess_training_file2(training_file):
-    tags = []
-    tags_with_start_stop = []
+def process_train_file_part_2(training_file):
+    labels = []
+    labels_with_start_stop = []
     words = []
 
     with open(training_file, "r", encoding="utf8") as f:
-        document = f.read().rstrip()
-        lines = document.split("\n\n")
+        doc = f.read().rstrip()
+        lines = doc.split("\n\n")
 
         for line in lines:
-            tags_list = []
-            tags_with_start_stop_list = []
+            labels_list = []
+            labels_with_start_stop_list = []
             words_list = []
 
             for word_tag in line.split("\n"):
@@ -52,22 +53,23 @@ def _preprocess_training_file2(training_file):
 
                 word, tag = i[0], i[1]
                 words_list.append(word)
-                tags_list.append(tag)
+                labels_list.append(tag)
 
-            tags.append(tags_list)
-            tags_with_start_stop_list = [START_TAG] + tags_list + [STOP_TAG]
-            tags_with_start_stop.append(tags_with_start_stop_list)
+            labels.append(labels_list)
+            labels_with_start_stop_list = [STARTING_TAG] + labels_list + [STOP_TAG]
+            labels_with_start_stop.append(labels_with_start_stop_list)
             words.append(words_list)
 
-    return tags, tags_with_start_stop, words
+    # f.close()
+    return labels, labels_with_start_stop, words
 
 
-def _preprocess_test_file2(testing_file):
+def process_test_file_part_2(testing_file):
     test_words = []
 
     with open(testing_file, encoding="utf8") as f:
-        document = f.read().rstrip()
-        lines = document.split("\n\n")
+        doc = f.read().rstrip()
+        lines = doc.split("\n\n")
 
         for line in lines:
             word_list = []
@@ -75,4 +77,5 @@ def _preprocess_test_file2(testing_file):
                 word_list.append(word)
             test_words.append(word_list)
 
+    # f.close()
     return test_words

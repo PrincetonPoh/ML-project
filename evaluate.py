@@ -1,9 +1,4 @@
-from EvalScript.evalResult import (
-    get_observed,
-    get_predicted,
-    compare_observed_to_predicted,
-)
-
+from Eval.evalResult import *
 
 def evaluateScores(actual_file, predicted_file):
     with open(predicted_file, encoding="utf8") as f:
@@ -15,7 +10,7 @@ def evaluateScores(actual_file, predicted_file):
     compare_observed_to_predicted(get_observed(actual), get_predicted(predicted))
 
 
-def write_to_predicted_file(predicted_file, words_list, tags_list):
+def write_to_output_file(predicted_file, words_list, tags_list):
     assert len(words_list) == len(tags_list)
 
     with open(predicted_file, "w", encoding="utf8") as f:
